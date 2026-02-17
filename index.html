@@ -135,8 +135,12 @@ const BingoGame = () => {
       const savedInventory = localStorage.getItem('cnyBingoInventory_v2');
       if (savedInventory) setInventory(JSON.parse(savedInventory));
       
-      // Init Share URL
-      setShareUrl(window.location.href);
+      // Init Share URL (Cleaned up for GitHub Pages sharing)
+      // Removes query params like ?fbclid=... to keep QR code clean
+      if (typeof window !== 'undefined') {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        setShareUrl(cleanUrl);
+      }
       
     } catch (e) {
       console.error("Failed to load saved game:", e);
@@ -519,7 +523,9 @@ const BingoGame = () => {
                   </div>
                   {/* Share Link Input */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">分享連結 (生成 QR Code)</label>
+                    <label className="flex items-center text-xs font-bold text-slate-500 mb-1">
+                      <QrCode size={14} className="mr-1"/> 分享連結 (生成 QR Code)
+                    </label>
                     <input 
                       type="text" 
                       placeholder="https://..."
