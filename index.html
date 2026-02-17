@@ -2,107 +2,144 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 萬馬奔騰・健康賓果</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 萬馬奔騰・健康賓果 RPG</title>
     
-    <!-- 引入 Tailwind CSS (樣式) -->
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 引入 React 和 Babel (核心邏輯) -->
+    <!-- 引入 React 和 Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- 引入 Lucide Icons (圖示) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- 引入 Lucide Icons (鎖定版本以確保穩定性) -->
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+    
+    <!-- 引入 Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-        /* 自定義動畫樣式 */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
-        .zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #7f1d1d; }
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0px); } }
+        @keyframes shake-hard { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        @keyframes hit-effect { 0% { transform: scale(1); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-shake-hard { animation: shake-hard 0.5s; }
+        .animate-hit { animation: hit-effect 0.4s ease-out forwards; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .golden-text {
+            background: linear-gradient(to bottom, #d97706, #b45309);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-red-50 text-slate-800">
+<body class="bg-gradient-to-b from-[#991b1b] to-[#7f1d1d] text-slate-800 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // --- ICON SYSTEM SETUP ---
-        // 建立一個通用的 Icon 元件來處理 Lucide 圖示
+        // --- ICON SYSTEM FIX ---
+        // 將 kebab-case (如 'rotate-ccw') 轉換為 PascalCase (如 'RotateCcw')
+        const toPascalCase = (str) => {
+            return str.replace(/(^|-)([a-z0-9])/g, (g) => g.toUpperCase().replace('-', ''));
+        };
+
         const Icon = ({ name, size = 24, className = "" }) => {
             const [svgHtml, setSvgHtml] = useState("");
             
             useEffect(() => {
-                // 使用 Lucide 官方 API 產生 SVG 字串
-                if (window.lucide && window.lucide.icons[name]) {
-                    const svg = window.lucide.icons[name].toSvg({
+                const pascalName = toPascalCase(name);
+                if (window.lucide && window.lucide.icons && window.lucide.icons[pascalName]) {
+                    const svg = window.lucide.icons[pascalName].toSvg({
                         width: size,
                         height: size,
                         class: className
                     });
                     setSvgHtml(svg);
+                } else {
+                    // Fallback if icon not found
+                    console.warn(`Icon not found: ${name} -> ${pascalName}`);
                 }
             }, [name, size, className]);
 
+            if (!svgHtml) return <span className={`inline-block w-${size} h-${size}`}></span>; // Placeholder
             return <span dangerouslySetInnerHTML={{ __html: svgHtml }} className="inline-flex items-center justify-center" />;
         };
 
-        // 對應原本代碼中的圖示元件
+        // Icons Definitions
         const Trophy = (p) => <Icon name="trophy" {...p} />;
+        const Sword = (p) => <Icon name="sword" {...p} />;
+        const Gift = (p) => <Icon name="gift" {...p} />;
+        const Scroll = (p) => <Icon name="scroll" {...p} />;
+        const Wand2 = (p) => <Icon name="wand-2" {...p} />;
+        const Share2 = (p) => <Icon name="share-2" {...p} />;
+        const RotateCcw = (p) => <Icon name="rotate-ccw" {...p} />;
         const Flame = (p) => <Icon name="flame" {...p} />;
         const Droplets = (p) => <Icon name="droplets" {...p} />;
         const Moon = (p) => <Icon name="moon" {...p} />;
         const Activity = (p) => <Icon name="activity" {...p} />;
         const Utensils = (p) => <Icon name="utensils" {...p} />;
-        const RotateCcw = (p) => <Icon name="rotate-ccw" {...p} />;
-        const Share2 = (p) => <Icon name="share-2" {...p} />;
-        const Gamepad2 = (p) => <Icon name="gamepad-2" {...p} />;
-        const Wind = (p) => <Icon name="wind" {...p} />;
-        const Zap = (p) => <Icon name="zap" {...p} />;
-        const ExternalLink = (p) => <Icon name="external-link" {...p} />;
-        const Gift = (p) => <Icon name="gift" {...p} />;
-        const Dna = (p) => <Icon name="dna" {...p} />;
-        const Star = (p) => <Icon name="star" {...p} />;
-        const Scroll = (p) => <Icon name="scroll" {...p} />;
-        const Send = (p) => <Icon name="send" {...p} />;
+        const QrCode = (p) => <Icon name="qr-code" {...p} />;
         const Check = (p) => <Icon name="check" {...p} />;
+        const Zap = (p) => <Icon name="zap" {...p} />;
+        const Send = (p) => <Icon name="send" {...p} />;
         const Edit3 = (p) => <Icon name="edit-3" {...p} />;
-        const Heart = (p) => <Icon name="heart" {...p} />;
+        const Bot = (p) => <Icon name="bot" {...p} />;
         const Shuffle = (p) => <Icon name="shuffle" {...p} />;
         const MousePointer2 = (p) => <Icon name="mouse-pointer-2" {...p} />;
-        const Bot = (p) => <Icon name="bot" {...p} />;
-        const X = (p) => <Icon name="x" {...p} />;
+        const Crown = (p) => <Icon name="crown" {...p} />;
         const Sparkles = (p) => <Icon name="sparkles" {...p} />;
-        const QrCode = (p) => <Icon name="qr-code" {...p} />;
+        const Gamepad2 = (p) => <Icon name="gamepad-2" {...p} />;
+        const Wind = (p) => <Icon name="wind" {...p} />;
+        const ExternalLink = (p) => <Icon name="external-link" {...p} />;
+        const Heart = (p) => <Icon name="heart" {...p} />; // Added missing Heart icon definition
 
-        // --- APP LOGIC STARTS HERE ---
-
+        // --- GAME DATA ---
         const getIcon = (id, type) => {
-            if (id === 1 || id === 19) return <Droplets size={16} />; 
-            if (id === 8) return <Flame size={16} />; 
-            if (id === 10 || id === 22) return <Moon size={16} />; 
-            if (id === 21) return <Share2 size={16} />; 
-            if (id === 13) return <Trophy size={20} />; 
-            if (id === 25) return <Trophy size={16} />; 
-            
+            if (id === 1 || id === 19) return <Droplets size={18} />; 
+            if (id === 8) return <Flame size={18} />; 
+            if (id === 10 || id === 22) return <Moon size={18} />; 
+            if (id === 21) return <Share2 size={18} />; 
+            if (id === 13) return <Trophy size={24} className="text-yellow-600" />; 
+            if (id === 25) return <Trophy size={18} />; 
             switch (type) {
-                case 'diet': return <Utensils size={16} />;
-                case 'exercise': return <Activity size={16} />;
-                case 'life': return <Activity size={16} />;
-                default: return <Activity size={16} />;
+                case 'diet': return <Utensils size={18} />;
+                case 'exercise': return <Activity size={18} />;
+                default: return <Activity size={18} />;
             }
         };
 
+        const BOSS_MAX_HP = 500; 
+
         const PRIZE_POOL = [
-            { id: 'p1', name: '黃金萬兩馬', rarity: 'SSR', chance: 0.05, icon: '🐎', color: 'text-yellow-500 bg-yellow-100', desc: '馬年行大運！運氣爆棚！' },
-            { id: 'p2', name: '千里赤兔馬', rarity: 'SR', chance: 0.15, icon: '🐴', color: 'text-red-600 bg-red-100', desc: '活力充沛，日行千里。' },
-            { id: 'p3', name: '夢幻獨角獸', rarity: 'SR', chance: 0.15, icon: '🦄', color: 'text-purple-600 bg-purple-100', desc: '優雅迷人，魅力四射。' },
-            { id: 'p4', name: '翠玉白菜馬', rarity: 'R', chance: 0.25, icon: '🥬', color: 'text-green-600 bg-green-100', desc: '飲食均衡，腸胃健康。' },
-            { id: 'p5', name: '快樂搖搖馬', rarity: 'N', chance: 0.40, icon: '🎠', color: 'text-amber-700 bg-amber-100', desc: '童心未泯，天天開心。' },
+            { id: 'p1', name: '黃金萬兩馬', rarity: 'SSR', chance: 0.05, icon: '🐎', color: 'text-yellow-600 bg-yellow-50 border-yellow-200', desc: '馬年行大運！運氣爆棚！' },
+            { id: 'p2', name: '千里赤兔馬', rarity: 'SR', chance: 0.15, icon: '🐴', color: 'text-red-600 bg-red-50 border-red-200', desc: '活力充沛，日行千里。' },
+            { id: 'p3', name: '夢幻獨角獸', rarity: 'SR', chance: 0.15, icon: '🦄', color: 'text-purple-600 bg-purple-50 border-purple-200', desc: '優雅迷人，魅力四射。' },
+            { id: 'p4', name: '翠玉白菜馬', rarity: 'R', chance: 0.25, icon: '🥬', color: 'text-green-600 bg-green-50 border-green-200', desc: '飲食均衡，腸胃健康。' },
+            { id: 'p5', name: '快樂搖搖馬', rarity: 'N', chance: 0.40, icon: '🎠', color: 'text-slate-600 bg-slate-50 border-slate-200', desc: '童心未泯，天天開心。' },
+        ];
+
+        const FORTUNES = [
+            { type: '大吉', title: '天選之人', text: '新陳代謝如火箭，怎麼吃都不胖（但也別太囂張）。', color: 'text-red-600' },
+            { type: '中吉', title: '穩紮穩打', text: '今日宜深蹲，核心有力，紅包拿得更穩。', color: 'text-orange-500' },
+            { type: '小吉', title: '小確幸', text: '多喝水運氣會變好，皮膚也會變亮喔！', color: 'text-yellow-600' },
+            { type: '吉', title: '平安是福', text: '早睡早起身體好，財神爺最愛精神好的人。', color: 'text-green-600' },
         ];
 
         const GREETING_OPTIONS = [
@@ -116,32 +153,32 @@
 
         const GACHA_COST = 30;
 
+        // Hash function for keyword generation
+        const getKeyword = (name) => {
+            if (!name) return "健康";
+            const keywords = ["自律", "核心", "喝水", "深蹲", "早睡", "有氧", "蔬菜", "減糖", "微笑", "伸展"];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return keywords[Math.abs(hash) % keywords.length];
+        };
+
         const BingoGame = () => {
+            // Initial Grid Data definition moved inside to avoid clutter
             const initialGridData = [
-                { id: 1, text: "餐前喝 500cc 水", type: "diet" },
-                { id: 2, text: "原地開合跳 50 下", type: "exercise" },
-                { id: 3, text: "這餐只吃七分飽", type: "diet" },
-                { id: 4, text: "飯後散步 15 分鐘", type: "exercise" },
-                { id: 5, text: "拒絕一杯含糖飲料", type: "diet" },
-                { id: 6, text: "深蹲 20 下", type: "exercise" },
-                { id: 7, text: "吃一盤深綠色蔬菜", type: "diet" },
-                { id: 8, text: "幫忙做家事 20 分鐘", type: "life" },
-                { id: 9, text: "完全不沾醬料吃一餐", type: "diet" },
-                { id: 10, text: "睡滿 7 小時", type: "life" },
-                { id: 11, text: "平板支撐 1 分鐘", type: "exercise" },
-                { id: 12, text: "爬樓梯代替電梯", type: "exercise" },
-                { id: 13, text: "馬年大吉 (免費格)", type: "free", checked: true },
-                { id: 14, text: "水果代替餅乾零食", type: "diet" },
-                { id: 15, text: "站著打牌/聊天 1 局", type: "life" },
-                { id: 16, text: "做伸展操 10 分鐘", type: "exercise" },
-                { id: 17, text: "這餐先吃菜再吃肉", type: "diet" },
-                { id: 18, text: "核心運動 (仰臥起坐) 20下", type: "exercise" },
-                { id: 19, text: "喝無糖茶代替酒/果汁", type: "diet" },
-                { id: 20, text: "日行 8000 步", type: "exercise" },
-                { id: 21, text: "分享一個健康知識", type: "life" },
-                { id: 22, text: "不吃宵夜 (9點後禁食)", type: "diet" },
-                { id: 23, text: "波比跳 (Burpees) 10 下", type: "exercise" },
-                { id: 24, text: "量體重並記錄", type: "life" },
+                { id: 1, text: "餐前喝 500cc 水", type: "diet" }, { id: 2, text: "原地開合跳 50 下", type: "exercise" },
+                { id: 3, text: "這餐只吃七分飽", type: "diet" }, { id: 4, text: "飯後散步 15 分鐘", type: "exercise" },
+                { id: 5, text: "拒絕一杯含糖飲料", type: "diet" }, { id: 6, text: "深蹲 20 下", type: "exercise" },
+                { id: 7, text: "吃一盤深綠色蔬菜", type: "diet" }, { id: 8, text: "幫忙做家事 20 分鐘", type: "life" },
+                { id: 9, text: "完全不沾醬料吃一餐", type: "diet" }, { id: 10, text: "睡滿 7 小時", type: "life" },
+                { id: 11, text: "平板支撐 1 分鐘", type: "exercise" }, { id: 12, text: "爬樓梯代替電梯", type: "exercise" },
+                { id: 13, text: "馬年大吉 (免費)", type: "free", checked: true }, { id: 14, text: "水果代替餅乾零食", type: "diet" },
+                { id: 15, text: "站著打牌/聊天 1 局", type: "life" }, { id: 16, text: "做伸展操 10 分鐘", type: "exercise" },
+                { id: 17, text: "這餐先吃菜再吃肉", type: "diet" }, { id: 18, text: "核心運動 20 下", type: "exercise" },
+                { id: 19, text: "喝無糖茶代替酒/果汁", type: "diet" }, { id: 20, text: "日行 8000 步", type: "exercise" },
+                { id: 21, text: "分享一個健康知識", type: "life" }, { id: 22, text: "不吃宵夜", type: "diet" },
+                { id: 23, text: "波比跳 10 下", type: "exercise" }, { id: 24, text: "量體重並記錄", type: "life" },
                 { id: 25, text: "向親友說一句吉祥話", type: "life" },
             ];
 
@@ -151,17 +188,25 @@
                 { name: "Breathing 深呼吸", desc: "放鬆與紓壓練習", url: "https://lukehsiao-yc.github.io/breathing/", icon: <Wind size={20} />, color: "bg-green-100 text-green-600" }
             ];
 
+            // States
             const [grid, setGrid] = useState(initialGridData);
-            const [lines, setLines] = useState(0);
-            const [totalScore, setTotalScore] = useState(0);
             const [activeTab, setActiveTab] = useState('bingo');
-            const [selectionMode, setSelectionMode] = useState('manual');
-            const [randomTask, setRandomTask] = useState(null);
-            const [showTaskModal, setShowTaskModal] = useState(false);
-            const [spentPoints, setSpentPoints] = useState(0);
+            const [bossHP, setBossHP] = useState(BOSS_MAX_HP);
+            const [isBossHit, setIsBossHit] = useState(false);
+            const [showHitEffect, setShowHitEffect] = useState(null); 
+            
             const [inventory, setInventory] = useState([]);
-            const [drawResult, setDrawResult] = useState(null);
+            const [spentPoints, setSpentPoints] = useState(0);
+            const [totalScore, setTotalScore] = useState(0);
+            const [lines, setLines] = useState(0);
+
+            // Gacha & Fortune UI
             const [isDrawing, setIsDrawing] = useState(false);
+            const [drawResult, setDrawResult] = useState(null);
+            const [fortuneResult, setFortuneResult] = useState(null);
+            const [isShaking, setIsShaking] = useState(false);
+
+            // Card Creator
             const [senderName, setSenderName] = useState('');
             const [recipientName, setRecipientName] = useState('');
             const [selectedGreetings, setSelectedGreetings] = useState([]);
@@ -169,129 +214,103 @@
             const [showGeneratedCard, setShowGeneratedCard] = useState(false);
             const [shareUrl, setShareUrl] = useState('');
 
+            // Effects
             useEffect(() => {
-                try {
-                    const savedGrid = localStorage.getItem('cnyBingoGrid_v2'); 
-                    if (savedGrid) setGrid(JSON.parse(savedGrid));
-                    
-                    const savedSpent = localStorage.getItem('cnyBingoSpent_v2');
-                    if (savedSpent) setSpentPoints(parseInt(savedSpent));
-
-                    const savedInventory = localStorage.getItem('cnyBingoInventory_v2');
-                    if (savedInventory) setInventory(JSON.parse(savedInventory));
-                    
-                    if (typeof window !== 'undefined') {
-                        setShareUrl(window.location.href);
+                const savedGrid = localStorage.getItem('cnyBingoGrid_v3');
+                if (savedGrid) setGrid(JSON.parse(savedGrid));
+                const savedInv = localStorage.getItem('cnyBingoInventory_v3');
+                if (savedInv) setInventory(JSON.parse(savedInv));
+                const savedSpent = localStorage.getItem('cnyBingoSpent_v3');
+                if (savedSpent) setSpentPoints(parseInt(savedSpent));
+                
+                if (typeof window !== 'undefined') {
+                    if (window.location.protocol === 'file:') {
+                        setShareUrl("https://您的github帳號.github.io/您的專案名稱/");
+                    } else {
+                        setShareUrl(window.location.href.split('?')[0]);
                     }
-                    
-                } catch (e) {
-                    console.error("Failed to load saved game:", e);
-                    setGrid(initialGridData);
                 }
             }, []);
 
             useEffect(() => {
-                try {
-                    localStorage.setItem('cnyBingoGrid_v2', JSON.stringify(grid));
-                    localStorage.setItem('cnyBingoSpent_v2', spentPoints.toString());
-                    localStorage.setItem('cnyBingoInventory_v2', JSON.stringify(inventory));
-                    checkWinConditions();
-                } catch (e) {
-                    console.error("Failed to save game:", e);
-                }
-            }, [grid, spentPoints, inventory]);
+                localStorage.setItem('cnyBingoGrid_v3', JSON.stringify(grid));
+                localStorage.setItem('cnyBingoInventory_v3', JSON.stringify(inventory));
+                localStorage.setItem('cnyBingoSpent_v3', spentPoints.toString());
+                recalcStats();
+            }, [grid, spentPoints]);
 
-            const toggleCell = (id) => {
-                if (id === 13) return; 
-                setGrid(grid.map(cell => 
-                    cell.id === id ? { ...cell, checked: !cell.checked } : cell
-                ));
-            };
-
-            const handleGridClick = (id) => {
-                if (selectionMode === 'auto') {
-                    alert("目前是「電腦選擇模式」！請點擊下方的「🔮 電腦幫我選」按鈕來抽取任務。");
-                    return;
-                }
-                toggleCell(id);
-            };
-
-            const pickRandomTask = () => {
-                const availableTasks = grid.filter(cell => !cell.checked && cell.id !== 13);
-                if (availableTasks.length === 0) {
-                    alert("太厲害了！所有任務都已經完成了！");
-                    return;
-                }
-                const randomIndex = Math.floor(Math.random() * availableTasks.length);
-                setRandomTask(availableTasks[randomIndex]);
-                setShowTaskModal(true);
-            };
-
-            const completeRandomTask = () => {
-                if (randomTask) {
-                    setGrid(grid.map(cell => 
-                        cell.id === randomTask.id ? { ...cell, checked: true } : cell
-                    ));
-                    setShowTaskModal(false);
-                    setRandomTask(null);
-                }
-            };
-
-            const checkWinConditions = () => {
-                let newLines = 0;
+            const recalcStats = () => {
                 let checkedCount = 0;
-                const isChecked = (index) => grid[index]?.checked;
+                let newLines = 0;
+                const isChecked = (i) => grid[i]?.checked;
 
-                for (let i = 0; i < 5; i++) {
-                    if ([0, 1, 2, 3, 4].every(offset => isChecked(i * 5 + offset))) newLines++;
-                }
-                for (let i = 0; i < 5; i++) {
-                    if ([0, 1, 2, 3, 4].every(offset => isChecked(i + offset * 5))) newLines++;
-                }
-                if ([0, 6, 12, 18, 24].every(index => isChecked(index))) newLines++;
-                if ([4, 8, 12, 16, 20].every(index => isChecked(index))) newLines++;
+                for (let i = 0; i < 5; i++) if ([0,1,2,3,4].every(o => isChecked(i*5+o))) newLines++;
+                for (let i = 0; i < 5; i++) if ([0,1,2,3,4].every(o => isChecked(i+o*5))) newLines++;
+                if ([0,6,12,18,24].every(i => isChecked(i))) newLines++;
+                if ([4,8,12,16,20].every(i => isChecked(i))) newLines++;
 
-                grid.forEach(cell => {
-                    if(cell.checked && cell.id !== 13) checkedCount++;
-                });
+                grid.forEach(c => { if(c.checked && c.id !== 13) checkedCount++ });
 
+                const score = (checkedCount * 10) + (newLines * 50);
+                setTotalScore(score);
                 setLines(newLines);
-                setTotalScore((checkedCount * 10) + (newLines * 50));
+
+                const damageDealt = (checkedCount * 20) + (newLines * 50);
+                setBossHP(Math.max(0, BOSS_MAX_HP - damageDealt));
+            };
+
+            const triggerConfetti = () => {
+                if(window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#ef4444', '#ffffff'] });
+            };
+
+            const handleTaskClick = (id, e) => {
+                if (id === 13) return;
+                const cell = grid.find(c => c.id === id);
+                if (!cell) return;
+
+                const isCompleting = !cell.checked;
+                setGrid(grid.map(c => c.id === id ? { ...c, checked: !c.checked } : c));
+
+                if (isCompleting) {
+                    setIsBossHit(true);
+                    setTimeout(() => setIsBossHit(false), 500);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setShowHitEffect({ x: rect.left + rect.width/2, y: rect.top, val: 20 });
+                    setTimeout(() => setShowHitEffect(null), 800);
+                }
             };
 
             const handleDraw = () => {
-                const cost = GACHA_COST;
-                const availablePoints = totalScore - spentPoints;
-                if (availablePoints < cost) {
-                    alert("積分不足！快去完成更多健康任務吧！");
-                    return;
-                }
+                if ((totalScore - spentPoints) < GACHA_COST) return alert("積分不足！快去攻擊年獸賺取積分！");
+                setSpentPoints(p => p + GACHA_COST);
                 setIsDrawing(true);
-                setSpentPoints(prev => prev + cost);
                 setTimeout(() => {
                     const rand = Math.random();
-                    let cumulativeChance = 0;
-                    let prize = PRIZE_POOL[PRIZE_POOL.length - 1];
+                    let cumulative = 0;
+                    let prize = PRIZE_POOL[PRIZE_POOL.length-1];
                     for (let p of PRIZE_POOL) {
-                        cumulativeChance += p.chance;
-                        if (rand < cumulativeChance) {
-                            prize = p;
-                            break;
-                        }
+                        cumulative += p.chance;
+                        if (rand < cumulative) { prize = p; break; }
                     }
-                    const newPrize = { ...prize, obtainedAt: new Date().toISOString() };
-                    setInventory(prev => [newPrize, ...prev]);
-                    setDrawResult(newPrize);
+                    setInventory(prev => [prize, ...prev]);
+                    setDrawResult(prize);
                     setIsDrawing(false);
+                    if(prize.rarity === 'SSR') triggerConfetti();
                 }, 1500);
             };
 
-            const resetGame = () => {
-                if(window.confirm("確定要重置所有進度嗎？（戰利品會保留）")) {
-                    const reset = initialGridData.map(cell => 
-                        cell.id === 13 ? { ...cell, checked: true } : { ...cell, checked: false }
-                    );
-                    setGrid(reset);
+            const handleFortune = () => {
+                setIsShaking(true);
+                setFortuneResult(null);
+                setTimeout(() => {
+                    setIsShaking(false);
+                    setFortuneResult(FORTUNES[Math.floor(Math.random()*FORTUNES.length)]);
+                }, 1500);
+            };
+
+            const resetData = () => {
+                if(confirm("確定重置進度？(戰利品會保留)")) {
+                    setGrid(initialGridData.map(c => c.id===13 ? {...c, checked:true} : {...c, checked:false}));
                 }
             };
 
@@ -306,84 +325,104 @@
                     }
                 }
             };
-            
-            const uniqueInventory = inventory.reduce((acc, current) => {
-                const x = acc.find(item => item.id === current.id);
-                return !x ? acc.concat([current]) : acc;
-            }, []);
-
-            const generateCard = () => {
-                if (selectedGreetings.length === 0) {
-                    alert("請至少選擇 1 個健康元素！");
-                    return;
-                }
-                setShowGeneratedCard(true);
-            };
 
             const availablePoints = totalScore - spentPoints;
+            const uniqueInv = [...new Map(inventory.map(item => [item.id, item])).values()];
 
             return (
-                <div className="min-h-screen pb-24 relative">
-                    {/* Header */}
-                    <div className="bg-red-600 text-white p-6 shadow-lg rounded-b-3xl mb-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
-                            <Trophy size={150} />
-                        </div>
-                        <h1 className="text-3xl font-bold mb-2 text-center">2026 萬馬奔騰</h1>
-                        <h2 className="text-xl font-medium text-center text-yellow-300">健康不腫賓果大挑戰</h2>
-                        
-                        <div className="flex justify-center mt-6 gap-6">
-                            <div className="text-center">
-                                <p className="text-xs text-red-200 uppercase tracking-wider">可用積分</p>
-                                <p className="text-4xl font-bold text-white">{availablePoints}</p>
+                <div className="max-w-md mx-auto min-h-screen relative pb-24 overflow-x-hidden shadow-2xl bg-[#fffaf0]">
+                    
+                    {/* BOSS BATTLE SECTION */}
+                    <div className="relative bg-gradient-to-b from-slate-900 to-red-900 text-white p-6 rounded-b-[2rem] shadow-xl z-10 overflow-hidden border-b-4 border-yellow-500">
+                        <div className="flex justify-center items-center mb-4 relative mt-2">
+                            <div className={`transition-transform duration-100 ${isBossHit ? 'animate-shake-hard brightness-150 sepia' : 'animate-float'}`}>
+                                {bossHP > 0 ? (
+                                    <div className="text-8xl filter drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]">👹</div>
+                                ) : (
+                                    <div className="text-8xl animate-bounce">📦</div>
+                                )}
                             </div>
-                            <div className="w-px bg-red-400 h-12"></div>
+                            {showHitEffect && (
+                                <div className="fixed text-4xl font-black text-yellow-400 animate-hit z-50 pointer-events-none" style={{ left: showHitEffect.x, top: showHitEffect.y }}>
+                                    -20
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="text-center relative z-10">
+                            <h2 className="text-sm font-bold text-red-300 tracking-widest mb-1">BOSS RAID</h2>
+                            <h1 className="text-2xl font-black text-white mb-2 flex items-center justify-center gap-2">
+                                {bossHP > 0 ? "體脂肪年獸" : "年獸已擊退！"}
+                            </h1>
+                            <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-600 relative mb-2 shadow-inner">
+                                <div className="h-full bg-gradient-to-r from-red-500 to-yellow-500 transition-all duration-500 ease-out" style={{ width: `${(bossHP / BOSS_MAX_HP) * 100}%` }}></div>
+                            </div>
+                            <p className="text-xs text-slate-400 flex justify-between">
+                                <span>HP: {bossHP}/{BOSS_MAX_HP}</span>
+                                <span>{bossHP === 0 ? "獎勵已掉落" : "完成任務造成傷害"}</span>
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mt-6 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
+                            <div className="text-center border-r border-white/10">
+                                <div className="text-xs text-yellow-200 mb-1">可用戰利點數</div>
+                                <div className="text-2xl font-black text-yellow-400">{availablePoints}</div>
+                            </div>
                             <div className="text-center">
-                                <p className="text-xs text-red-200 uppercase tracking-wider">總連線</p>
-                                <p className="text-4xl font-bold text-yellow-300">{lines}</p>
+                                <div className="text-xs text-yellow-200 mb-1">BINGO 連線</div>
+                                <div className="text-2xl font-black text-yellow-400">{lines}</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Main Content Area */}
-                    <div className="px-4 max-w-lg mx-auto">
-                        
+                    {/* MAIN CONTENT */}
+                    <div className="px-4 -mt-4 relative z-20">
                         {/* VIEW: BINGO */}
                         {activeTab === 'bingo' && (
-                            <div className="animate-in">
-                                <div className="flex bg-red-100 p-1 rounded-xl mb-4">
-                                    <button onClick={() => setSelectionMode('manual')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${selectionMode === 'manual' ? 'bg-white text-red-600 shadow-sm' : 'text-red-400 hover:bg-red-200/50'}`}>
-                                        <MousePointer2 size={16}/> 自選模式
-                                    </button>
-                                    <button onClick={() => setSelectionMode('auto')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${selectionMode === 'auto' ? 'bg-white text-red-600 shadow-sm' : 'text-red-400 hover:bg-red-200/50'}`}>
-                                        <Bot size={16}/> 電腦模式
-                                    </button>
-                                </div>
-
-                                <div className={`grid grid-cols-5 gap-2 mb-6 ${selectionMode === 'auto' ? 'opacity-90' : ''}`}>
-                                    {grid.map((cell) => (
-                                        <button key={cell.id} onClick={() => handleGridClick(cell.id)} className={`aspect-square flex flex-col items-center justify-center p-1 rounded-lg shadow-sm transition-all duration-200 relative ${cell.checked ? 'bg-yellow-400 text-red-900 transform scale-95 ring-2 ring-red-500' : selectionMode === 'auto' && cell.id !== 13 ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : 'bg-white hover:bg-red-50 text-slate-600'} ${cell.id === 13 ? 'bg-yellow-200 ring-2 ring-yellow-500' : ''}`}>
-                                            <div className={`mb-1 ${cell.checked ? 'text-red-800' : 'text-slate-400'}`}>{getIcon(cell.id, cell.type)}</div>
-                                            <span className="text-[10px] leading-tight text-center font-medium overflow-hidden">{cell.text}</span>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {selectionMode === 'auto' && (
-                                    <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-center zoom-in">
-                                        <p className="text-sm text-red-800 mb-3 font-medium">不知道該做什麼？讓電腦幫你決定！</p>
-                                        <button onClick={pickRandomTask} className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all">
-                                            <Shuffle size={20}/> 🔮 電腦幫我選
-                                        </button>
+                            <div className="animate-in pt-4">
+                                {/* Grid */}
+                                <div className="glass-panel p-3 rounded-2xl mb-6">
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {grid.map((cell) => (
+                                            <button 
+                                                key={cell.id} 
+                                                onClick={(e) => handleTaskClick(cell.id, e)}
+                                                className={`
+                                                    aspect-square flex flex-col items-center justify-center p-1 rounded-xl transition-all duration-200 relative border
+                                                    ${cell.checked 
+                                                        ? 'bg-yellow-100 border-yellow-400 text-red-900 shadow-inner scale-95' 
+                                                        : 'bg-white border-slate-200 text-slate-500 hover:border-red-300 shadow-sm'}
+                                                    ${cell.id === 13 ? 'bg-yellow-200/50 border-yellow-400' : ''}
+                                                `}
+                                            >
+                                                <div className={`mb-1 transition-transform ${cell.checked ? 'scale-110 text-red-700' : ''}`}>
+                                                    {getIcon(cell.id, cell.type)}
+                                                </div>
+                                                <span className="text-[9px] leading-[1.1] font-bold text-center line-clamp-2">
+                                                    {cell.text}
+                                                </span>
+                                            </button>
+                                        ))}
                                     </div>
-                                )}
+                                </div>
 
+                                {/* External Games */}
                                 <div className="mb-8">
-                                    <h3 className="font-bold text-red-800 mb-3 flex items-center px-1"><Gamepad2 className="mr-2" size={20}/> 健康遊戲小幫手</h3>
+                                    <h3 className="font-bold text-red-800 mb-3 flex items-center px-1">
+                                        <Gamepad2 className="mr-2" size={20}/> 健康遊戲小幫手
+                                    </h3>
                                     <div className="grid grid-cols-1 gap-3">
                                         {externalGames.map((game, index) => (
-                                            <a key={index} href={game.url} target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-red-100 transition-all group">
-                                                <div className={`p-3 rounded-full mr-4 ${game.color} group-hover:scale-110 transition-transform`}>{game.icon}</div>
+                                            <a 
+                                                key={index}
+                                                href={game.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-red-100 transition-all group"
+                                            >
+                                                <div className={`p-3 rounded-full mr-4 ${game.color} group-hover:scale-110 transition-transform`}>
+                                                    {game.icon}
+                                                </div>
                                                 <div className="flex-1">
                                                     <h4 className="font-bold text-slate-800">{game.name}</h4>
                                                     <p className="text-xs text-slate-500">{game.desc}</p>
@@ -394,9 +433,9 @@
                                     </div>
                                 </div>
 
-                                <div className="flex justify-center mb-8">
-                                    <button onClick={resetGame} className="flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-600 rounded-full font-medium hover:bg-slate-300 transition-colors">
-                                        <RotateCcw size={18} /> 重置/新的一天
+                                <div className="text-center mb-8">
+                                    <button onClick={resetData} className="px-6 py-2 rounded-full bg-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-300">
+                                        重置進度
                                     </button>
                                 </div>
                             </div>
@@ -404,42 +443,50 @@
 
                         {/* VIEW: GACHA */}
                         {activeTab === 'gacha' && (
-                            <div className="animate-in">
-                                <div className="bg-white rounded-2xl shadow-sm p-6 text-center border-2 border-red-100 mb-8 relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 via-yellow-400 to-red-400"></div>
-                                    <Gift className="mx-auto text-red-500 mb-4" size={48} />
-                                    <h3 className="text-xl font-bold text-red-800 mb-2">鴻運抽籤筒</h3>
-                                    <p className="text-slate-500 text-sm mb-6">消耗 {GACHA_COST} 積分，抽取馬年限定吉祥物！</p>
+                            <div className="animate-in pt-6">
+                                <div className="glass-panel p-6 rounded-3xl text-center border-2 border-yellow-400/30 relative overflow-hidden mb-8">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-yellow-400 to-red-500"></div>
+                                    <h3 className="text-2xl font-black golden-text mb-2">鴻運寶庫</h3>
+                                    <p className="text-slate-500 text-sm mb-6">消耗 {GACHA_COST} 點數，召喚馬年守護靈！</p>
                                     
-                                    {drawResult && !isDrawing && (
-                                        <div className="mb-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200 zoom-in">
-                                            <p className="text-xs text-yellow-600 font-bold mb-1">恭喜獲得</p>
-                                            <div className="text-4xl mb-2">{drawResult.icon}</div>
-                                            <div className={`inline-block px-2 py-0.5 rounded text-xs font-bold mb-2 ${drawResult.rarity === 'SSR' ? 'bg-yellow-500 text-white' : drawResult.rarity === 'SR' ? 'bg-red-500 text-white' : drawResult.rarity === 'R' ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'}`}>
-                                                {drawResult.rarity}
-                                            </div>
-                                            <h4 className="font-bold text-lg text-slate-800">{drawResult.name}</h4>
-                                            <p className="text-xs text-slate-500 mt-1">{drawResult.desc}</p>
+                                    {drawResult && !isDrawing ? (
+                                        <div className="bg-yellow-50 rounded-2xl p-6 border-2 border-yellow-200 mb-6 zoom-in shadow-inner">
+                                            <div className="text-6xl mb-4 animate-float">{drawResult.icon}</div>
+                                            <div className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full mb-2">{drawResult.rarity}</div>
+                                            <h4 className="text-xl font-bold text-slate-800">{drawResult.name}</h4>
+                                            <p className="text-xs text-slate-500 mt-2">{drawResult.desc}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="h-48 flex items-center justify-center mb-6">
+                                            <div className={`text-8xl transition-all ${isDrawing ? 'animate-bounce' : ''}`}>🎁</div>
                                         </div>
                                     )}
 
-                                    <button onClick={handleDraw} disabled={isDrawing || availablePoints < GACHA_COST} className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${isDrawing ? 'bg-slate-100 text-slate-400' : availablePoints >= GACHA_COST ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-200 active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
-                                        {isDrawing ? "正在搖籤..." : <><Dna size={20}/> 試試手氣 (-{GACHA_COST}分)</>}
+                                    <button 
+                                        onClick={handleDraw} 
+                                        disabled={isDrawing || availablePoints < GACHA_COST}
+                                        className={`w-full py-4 rounded-2xl font-black text-lg shadow-lg transform transition-all active:scale-95 flex items-center justify-center gap-2
+                                            ${availablePoints >= GACHA_COST 
+                                                ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-red-500/30' 
+                                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'}
+                                        `}
+                                    >
+                                        {isDrawing ? "召喚中..." : <><Sparkles size={20}/> 召喚守護靈 (-{GACHA_COST})</>}
                                     </button>
                                 </div>
 
-                                <div className="mb-8">
-                                    <h3 className="font-bold text-slate-800 mb-3 flex items-center px-1"><Star className="mr-2 text-yellow-500" size={20}/> 我的戰利品 ({inventory.length})</h3>
-                                    {inventory.length === 0 ? (
-                                        <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">尚未獲得任何吉祥物</div>
+                                <div className="space-y-3 pb-8">
+                                    <h4 className="font-bold text-slate-700 px-2">我的收藏</h4>
+                                    {uniqueInv.length === 0 ? (
+                                        <div className="text-center py-10 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400">背包空空如也</div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3">
-                                            {inventory.map((item, idx) => (
-                                                <div key={idx} className={`p-3 rounded-xl border flex items-center gap-3 ${item.color} border-white shadow-sm`}>
-                                                    <span className="text-2xl">{item.icon}</span>
+                                            {uniqueInv.map((item, idx) => (
+                                                <div key={idx} className={`p-3 rounded-xl border-2 flex items-center gap-3 bg-white ${item.color}`}>
+                                                    <span className="text-3xl filter drop-shadow-sm">{item.icon}</span>
                                                     <div className="text-left overflow-hidden">
-                                                        <p className="text-xs font-bold opacity-70">{item.rarity}</p>
-                                                        <p className="font-bold text-sm truncate">{item.name}</p>
+                                                        <p className="text-[10px] font-black opacity-60 uppercase">{item.rarity}</p>
+                                                        <p className="font-bold text-sm truncate text-slate-800">{item.name}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -449,89 +496,137 @@
                             </div>
                         )}
 
-                        {/* VIEW: CARD CREATOR */}
-                        {activeTab === 'card' && (
-                            <div className="animate-in">
-                                {!showGeneratedCard ? (
-                                    <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-red-100">
-                                        <h3 className="font-bold text-red-800 mb-4 flex items-center text-lg"><Edit3 className="mr-2" size={20}/> 製作健康賀年卡</h3>
-                                        
-                                        <div className="space-y-4 mb-6">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">我是 (寄件人)</label>
-                                                <input type="text" placeholder="例如：小明" value={senderName} onChange={(e) => setSenderName(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-red-400"/>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">想送給 (收件人)</label>
-                                                <input type="text" placeholder="例如：阿公、媽媽" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-red-400"/>
-                                            </div>
-                                            <div>
-                                                <label className="flex items-center text-xs font-bold text-slate-500 mb-1"><QrCode size={14} className="mr-1"/> 分享連結 (生成 QR Code)</label>
-                                                <input type="text" placeholder="https://..." value={shareUrl} onChange={(e) => setShareUrl(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-red-400 text-xs text-slate-600"/>
-                                            </div>
+                        {/* VIEW: FORTUNE */}
+                        {activeTab === 'fortune' && (
+                            <div className="animate-in pt-10 text-center">
+                                <div className="glass-panel p-8 rounded-3xl border border-red-100 relative">
+                                    <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 whitespace-nowrap">
+                                        <Wand2 size={18}/> 每日運勢
+                                    </div>
+                                    
+                                    {!fortuneResult ? (
+                                        <div className="py-10 cursor-pointer" onClick={handleFortune}>
+                                            <div className={`text-8xl mb-8 select-none transition-transform ${isShaking ? 'animate-shake-hard' : ''}`}>🎍</div>
+                                            <p className="text-slate-500 font-bold mb-6">點擊籤筒，搖出今日健康運</p>
+                                            <button disabled={isShaking} className="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold">
+                                                {isShaking ? "感應中..." : "開始求籤"}
+                                            </button>
                                         </div>
-
-                                        <div className="mb-6">
-                                            <label className="block text-xs font-bold text-slate-500 mb-2">1. 選擇 1~3 個健康祝福 ({selectedGreetings.length}/3)</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {GREETING_OPTIONS.map((option) => (
-                                                    <button key={option.id} onClick={() => toggleGreetingSelection(option.id)} className={`p-3 rounded-xl border flex items-center gap-2 transition-all text-left ${selectedGreetings.includes(option.id) ? 'border-red-500 bg-red-50 text-red-800 ring-1 ring-red-500' : 'border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-                                                        <div className={`${selectedGreetings.includes(option.id) ? 'text-red-500' : 'text-slate-400'}`}>{option.icon}</div>
-                                                        <span className="text-sm font-bold">{option.label}</span>
-                                                        {selectedGreetings.includes(option.id) && <Check size={16} className="ml-auto text-red-500"/>}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="mb-8">
-                                            <label className="block text-xs font-bold text-slate-500 mb-2">2. 選擇吉祥物裝飾 (來自您的戰利品)</label>
-                                            {uniqueInventory.length === 0 ? (
-                                                <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-sm text-slate-500">
-                                                    <p className="mb-2">您的背包是空的 😱</p>
-                                                    <button onClick={() => setActiveTab('gacha')} className="text-red-500 underline font-bold">快去抽幾隻吉祥物吧！</button>
+                                    ) : (
+                                        <div className="zoom-in py-4">
+                                            <div className="border-4 border-slate-800 p-1 inline-block rounded-lg mb-6 bg-white shadow-xl transform rotate-1">
+                                                <div className="border-2 border-slate-800 px-6 py-10 rounded bg-red-50 min-w-[220px]">
+                                                    <div className="text-5xl font-black text-slate-900 mb-4 font-serif">{fortuneResult.type}</div>
+                                                    <div className={`text-xl font-bold mb-6 ${fortuneResult.color}`}>{fortuneResult.title}</div>
+                                                    <div className="w-full h-px bg-slate-300 mb-6"></div>
+                                                    <p className="text-slate-600 font-medium leading-relaxed">{fortuneResult.text}</p>
                                                 </div>
-                                            ) : (
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <button onClick={() => setSelectedMascot(null)} className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all min-h-[80px] ${selectedMascot === null ? 'border-red-500 bg-red-50 text-red-800 ring-1 ring-red-500' : 'border-slate-100 bg-white text-slate-400 hover:bg-slate-50'}`}>
-                                                        <span className="text-xs font-bold">不使用</span>
-                                                    </button>
-                                                    {uniqueInventory.map((item) => (
-                                                        <button key={item.id} onClick={() => setSelectedMascot(item)} className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${selectedMascot?.id === item.id ? 'border-red-500 bg-red-50 text-red-800 ring-1 ring-red-500' : 'border-slate-100 bg-white text-slate-600 hover:bg-slate-50'}`}>
-                                                            <span className="text-2xl">{item.icon}</span>
-                                                            <span className="text-[10px] font-bold truncate w-full text-center">{item.name}</span>
+                                            </div>
+                                            <div>
+                                                <button onClick={() => setFortuneResult(null)} className="text-slate-400 underline text-sm">再求一支</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VIEW: CARD */}
+                        {activeTab === 'card' && (
+                            <div className="animate-in pt-6">
+                                {!showGeneratedCard ? (
+                                    <div className="glass-panel p-6 rounded-3xl border-white/50">
+                                        <h3 className="font-bold text-red-800 mb-6 flex items-center text-lg border-b border-red-100 pb-3">
+                                            <Edit3 className="mr-2" size={20}/> 賀卡設計師
+                                        </h3>
+                                        
+                                        <div className="space-y-4 mb-8">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-400 block mb-1">我是</label>
+                                                    <input type="text" placeholder="你的名字" value={senderName} onChange={e => setSenderName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-red-400"/>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-400 block mb-1">送給</label>
+                                                    <input type="text" placeholder="親友稱呼" value={recipientName} onChange={e => setRecipientName(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-red-400"/>
+                                                </div>
+                                            </div>
+
+                                            {/* Share URL Input - Added robustness */}
+                                            <div>
+                                                <label className="flex items-center text-xs font-bold text-slate-400 block mb-1">
+                                                    <QrCode size={12} className="mr-1"/> 分享連結 (生成 QR Code)
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="請輸入網址 (如 https://...)" 
+                                                    value={shareUrl} 
+                                                    onChange={e => setShareUrl(e.target.value)} 
+                                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:border-red-400"
+                                                />
+                                                <p className="text-[10px] text-slate-400 mt-1">※ 若 QR Code 顯示異常，請確認此欄位為有效網址</p>
+                                            </div>
+
+                                            {/* Greeting Selection */}
+                                            <div className="mb-4">
+                                                <label className="text-xs font-bold text-slate-400 block mb-2">健康祝福 (最多3個)</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {GREETING_OPTIONS.map((option) => (
+                                                        <button key={option.id} onClick={() => toggleGreetingSelection(option.id)} className={`p-2 rounded-lg border flex items-center gap-2 text-left text-xs ${selectedGreetings.includes(option.id) ? 'border-red-500 bg-red-50 text-red-800 ring-1 ring-red-500' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                                                            {option.icon}
+                                                            <span>{option.label}</span>
                                                         </button>
                                                     ))}
                                                 </div>
-                                            )}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-400 block mb-2">裝飾吉祥物 (來自背包)</label>
+                                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                                    <button onClick={() => setSelectedMascot(null)} className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center font-bold text-xs ${selectedMascot === null ? 'border-red-500 bg-red-50 text-red-600' : 'bg-white border-slate-200 text-slate-400'}`}>無</button>
+                                                    {uniqueInv.map(m => (
+                                                        <button key={m.id} onClick={() => setSelectedMascot(m)} className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center ${selectedMascot?.id === m.id ? 'border-red-500 bg-red-50' : 'bg-white border-slate-200'}`}>
+                                                            <span className="text-2xl">{m.icon}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <button onClick={generateCard} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all">
+                                        <button onClick={() => setShowGeneratedCard(true)} className="w-full py-4 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
                                             <Send size={18}/> 生成賀卡
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="animate-in mb-8">
-                                        <div className="bg-gradient-to-b from-red-600 to-red-800 rounded-2xl shadow-xl overflow-hidden border-4 border-yellow-500 relative">
-                                            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle, #fbbf24 2px, transparent 2.5px)', backgroundSize: '20px 20px'}}></div>
-                                            
+                                    <div className="zoom-in pb-8">
+                                        <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-2xl shadow-2xl overflow-hidden border-[6px] border-yellow-500 relative max-w-sm mx-auto">
+                                            <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(#fbbf24 1px, transparent 1px)', backgroundSize: '16px 16px'}}></div>
                                             <div className="p-8 pb-32 text-center relative z-10 text-white">
-                                                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 text-red-800 shadow-lg"><Scroll size={32} /></div>
-                                                <h2 className="text-2xl font-bold text-yellow-300 mb-1">馬年行大運</h2>
-                                                <p className="text-red-200 text-sm mb-6 uppercase tracking-widest">HAPPY NEW YEAR 2026</p>
+                                                <div className="inline-block p-4 rounded-full bg-yellow-400 text-red-900 shadow-lg mb-4"><Crown size={32}/></div>
+                                                <h2 className="text-3xl font-black text-yellow-300 mb-1 tracking-wider">馬年行大運</h2>
+                                                <p className="text-red-200/80 text-xs font-mono mb-8 tracking-[0.3em]">HEALTHY & WEALTHY</p>
                                                 
-                                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/20 relative overflow-hidden">
+                                                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-left relative">
                                                     {selectedMascot && (
-                                                        <div className="absolute -right-2 -top-2 opacity-90 transform rotate-12 bg-white text-slate-800 p-2 rounded-lg shadow-lg border-2 border-yellow-400 z-20 flex flex-col items-center">
-                                                            <span className="text-3xl filter drop-shadow-md">{selectedMascot.icon}</span>
-                                                            <span className="text-[8px] font-bold bg-red-600 text-white px-1 rounded mt-1">{selectedMascot.name}</span>
+                                                        <div className="absolute -top-4 -right-4 bg-white text-slate-900 p-2 rounded-lg shadow-xl transform rotate-12 border-2 border-yellow-400">
+                                                            <div className="text-4xl">{selectedMascot.icon}</div>
                                                         </div>
                                                     )}
-                                                    <p className="text-lg font-bold mb-4 text-left">To <span className="text-yellow-300 text-xl border-b border-yellow-300/50 pb-1">{recipientName || '親愛的朋友'}</span>：</p>
-                                                    <div className="space-y-4 text-left">
+                                                    <p className="text-lg font-bold mb-4">To <span className="text-yellow-300 border-b border-yellow-300/50">{recipientName || '朋友'}</span>：</p>
+                                                    
+                                                    {/* Keyword */}
+                                                    {senderName && (
+                                                        <div className="mb-4 bg-red-900/40 p-2 rounded-lg text-left border-l-2 border-yellow-400">
+                                                            <p className="text-xs text-red-200 mb-0.5">專屬 2026 命定關鍵字：</p>
+                                                            <p className="text-xl font-bold text-yellow-300">#{getKeyword(senderName)}</p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Greetings List */}
+                                                    <div className="space-y-4 mb-6">
                                                         {selectedGreetings.map(id => {
                                                             const item = GREETING_OPTIONS.find(g => g.id === id);
-                                                            return (
+                                                            return item ? (
                                                                 <div key={id} className="flex gap-3 items-start">
                                                                     <div className="mt-1 text-yellow-400 flex-shrink-0">{item.icon}</div>
                                                                     <div>
@@ -539,86 +634,64 @@
                                                                         <p className="text-red-100">{item.blessing.split('，')[1]}</p>
                                                                     </div>
                                                                 </div>
-                                                            );
+                                                            ) : null;
                                                         })}
                                                     </div>
-                                                    <p className="text-right mt-6 font-bold text-lg">From <span className="text-yellow-300 text-xl border-b border-yellow-300/50 pb-1">{senderName || '您的好友'}</span></p>
-                                                </div>
-                                                <div className="text-xs text-red-300/60 font-mono flex items-center justify-center gap-1"><Sparkles size={10}/> 萬馬奔騰・健康不腫</div>
-                                            </div>
 
-                                            <div className="absolute bottom-0 left-0 w-full bg-white p-4 flex items-center justify-between z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.2)]">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="bg-slate-100 p-1 rounded-lg border border-slate-200">
-                                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`} alt="Scan to Play" className="w-16 h-16 mix-blend-multiply"/>
+                                                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+                                                        <div className="bg-white p-1 rounded">
+                                                            <img 
+                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shareUrl)}`} 
+                                                                className="w-12 h-12"
+                                                                onError={(e) => { e.target.style.display='none'; }} 
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] text-yellow-200 uppercase">Challenge me</p>
+                                                            <p className="text-sm font-bold">掃描加入健康挑戰</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-left">
-                                                        <p className="text-[10px] text-slate-400 font-bold mb-0.5 uppercase tracking-wide">Join the Challenge</p>
-                                                        <p className="text-sm font-bold text-red-700 leading-tight">掃描加入<br/>健康賓果挑戰</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right hidden sm:block">
-                                                    <p className="text-[10px] text-slate-400">一起健康過好年</p>
                                                 </div>
                                             </div>
+                                            <div className="absolute bottom-4 w-full text-center text-[10px] text-white/40">蕭宇超醫師 陪大家一起健康過新年</div>
                                         </div>
-
-                                        <div className="mt-6 flex justify-center gap-4">
-                                            <button onClick={() => setShowGeneratedCard(false)} className="px-6 py-2 rounded-full bg-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-300 transition-colors">返回修改</button>
-                                            <button onClick={() => alert('請使用手機截圖功能保存這張卡片，然後傳送給朋友喔！')} className="px-6 py-2 rounded-full bg-red-600 text-white font-bold text-sm shadow-md hover:bg-red-700 transition-colors">保存/分享</button>
+                                        <div className="flex gap-4 mt-6 justify-center">
+                                            <button onClick={() => setShowGeneratedCard(false)} className="px-6 py-3 rounded-full bg-white text-slate-600 font-bold shadow hover:bg-slate-50">修改</button>
+                                            <button onClick={() => alert("請截圖分享！")} className="px-6 py-3 rounded-full bg-slate-800 text-white font-bold shadow hover:bg-slate-700">保存截圖</button>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
-
                     </div>
 
-                    {/* Credits Footer */}
-                    <div className="text-center py-6 text-slate-400 text-xs">
-                        蕭宇超醫師製作 陪大家一起健康過新年
-                    </div>
-
-                    {/* RANDOM TASK MODAL */}
-                    {showTaskModal && randomTask && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in">
-                            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-100">
-                                <div className="text-center">
-                                    <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><Bot size={32} /></div>
-                                    <h3 className="text-xl font-bold text-slate-800 mb-1">電腦指定任務</h3>
-                                    <p className="text-sm text-slate-400 mb-6">命運之神說，你現在該做這個！</p>
-                                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6 mb-6">
-                                        <div className="text-yellow-600 mb-2 flex justify-center">{getIcon(randomTask.id, randomTask.type)}</div>
-                                        <p className="text-xl font-bold text-slate-800">{randomTask.text}</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setShowTaskModal(false)} className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-colors">稍後再做</button>
-                                        <button onClick={completeRandomTask} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg hover:bg-red-700 transition-colors">立即完成！</button>
-                                    </div>
-                                    <button onClick={pickRandomTask} className="mt-4 text-xs text-slate-400 underline hover:text-red-500">換一個任務</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Bottom Navigation */}
-                    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] pb-safe pt-2 px-6 flex justify-around items-end z-50 h-20">
-                        <button onClick={() => setActiveTab('bingo')} className={`flex flex-col items-center gap-1 p-2 pb-4 transition-colors ${activeTab === 'bingo' ? 'text-red-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            <Check size={24} className={activeTab === 'bingo' ? 'stroke-[2.5px]' : ''}/><span className="text-[10px] font-bold">賓果任務</span>
+                    {/* BOTTOM NAV */}
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm bg-slate-900/90 backdrop-blur-md text-white rounded-full p-2 shadow-2xl z-50 flex justify-between items-center px-6 border border-white/10">
+                        <button onClick={() => setActiveTab('bingo')} className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'bingo' ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}`}>
+                            <Sword size={20} strokeWidth={2.5}/>
+                            <span className="text-[9px] font-bold">戰鬥</span>
                         </button>
-                        <button onClick={() => setActiveTab('gacha')} className={`flex flex-col items-center gap-1 p-2 pb-4 transition-colors ${activeTab === 'gacha' ? 'text-red-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            <Gift size={24} className={activeTab === 'gacha' ? 'stroke-[2.5px]' : ''}/><span className="text-[10px] font-bold">鴻運抽籤</span>
+                        <button onClick={() => setActiveTab('gacha')} className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'gacha' ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}`}>
+                            <Gift size={20} strokeWidth={2.5}/>
+                            <span className="text-[9px] font-bold">寶庫</span>
                         </button>
-                        <button onClick={() => setActiveTab('card')} className={`flex flex-col items-center gap-1 p-2 pb-4 transition-colors ${activeTab === 'card' ? 'text-red-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                            <Scroll size={24} className={activeTab === 'card' ? 'stroke-[2.5px]' : ''}/><span className="text-[10px] font-bold">健康賀卡</span>
+                        <button onClick={() => setActiveTab('fortune')} className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'fortune' ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}`}>
+                            <Wand2 size={20} strokeWidth={2.5}/>
+                            <span className="text-[9px] font-bold">靈籤</span>
+                        </button>
+                        <button onClick={() => setActiveTab('card')} className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'card' ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}`}>
+                            <Scroll size={20} strokeWidth={2.5}/>
+                            <span className="text-[9px] font-bold">賀卡</span>
                         </button>
                     </div>
 
+                    <div className="text-center pb-24 pt-10 text-red-900/40 text-xs font-bold">
+                        Designed for 2026 Lunar New Year
+                    </div>
                 </div>
             );
         };
 
-        // Render the app
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<BingoGame />);
     </script>
