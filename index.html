@@ -368,9 +368,8 @@
                                                 className={`
                                                     aspect-square flex flex-col items-center justify-center p-1 rounded-xl transition-all duration-200 relative border
                                                     ${cell.checked 
-                                                        ? 'bg-yellow-100 border-yellow-400 text-red-900 shadow-inner scale-95' 
+                                                        ? 'bg-yellow-100 border-yellow-400 text-red-900 shadow-inner' 
                                                         : 'bg-white border-slate-200 text-slate-500 hover:border-red-300 shadow-sm'}
-                                                    /* Removed special bg for id 13 to make it uniform size, kept border color for distinction */
                                                     ${cell.id === 13 ? 'border-yellow-400 bg-yellow-50' : ''}
                                                 `}
                                             >
@@ -651,26 +650,26 @@
                         )}
                     </div>
 
-                    {/* BOTTOM NAV */}
-                    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-md bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl z-50 flex justify-around items-center py-3 px-2 border border-white/10">
+                    {/* BOTTOM NAV - Updated Layout */}
+                    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-md bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl z-50 flex justify-between items-center py-2 px-6 border border-white/10">
                         <button onClick={() => setActiveTab('bingo')} className={`flex flex-col items-center gap-1 py-1 px-1 transition-all ${activeTab === 'bingo' ? 'text-yellow-400 scale-105' : 'text-slate-400 hover:text-white'}`}>
-                            <Sword size={24} strokeWidth={2.5}/>
+                            <Sword size={20} strokeWidth={2.5}/>
                             <span className="text-sm font-bold">戰鬥</span>
                         </button>
                         <button onClick={() => setActiveTab('games')} className={`flex flex-col items-center gap-1 py-1 px-1 transition-all ${activeTab === 'games' ? 'text-yellow-400 scale-105' : 'text-slate-400 hover:text-white'}`}>
-                            <Gamepad2 size={24} strokeWidth={2.5}/>
+                            <Gamepad2 size={20} strokeWidth={2.5}/>
                             <span className="text-sm font-bold">遊戲</span>
                         </button>
                         <button onClick={() => setActiveTab('gacha')} className={`flex flex-col items-center gap-1 py-1 px-1 transition-all ${activeTab === 'gacha' ? 'text-yellow-400 scale-105' : 'text-slate-400 hover:text-white'}`}>
-                            <Gift size={24} strokeWidth={2.5}/>
+                            <Gift size={20} strokeWidth={2.5}/>
                             <span className="text-sm font-bold">寶庫</span>
                         </button>
                         <button onClick={() => setActiveTab('fortune')} className={`flex flex-col items-center gap-1 py-1 px-1 transition-all ${activeTab === 'fortune' ? 'text-yellow-400 scale-105' : 'text-slate-400 hover:text-white'}`}>
-                            <Wand2 size={24} strokeWidth={2.5}/>
+                            <Wand2 size={20} strokeWidth={2.5}/>
                             <span className="text-sm font-bold">靈籤</span>
                         </button>
                         <button onClick={() => setActiveTab('card')} className={`flex flex-col items-center gap-1 py-1 px-1 transition-all ${activeTab === 'card' ? 'text-yellow-400 scale-105' : 'text-slate-400 hover:text-white'}`}>
-                            <Scroll size={24} strokeWidth={2.5}/>
+                            <Scroll size={20} strokeWidth={2.5}/>
                             <span className="text-sm font-bold">賀卡</span>
                         </button>
                     </div>
